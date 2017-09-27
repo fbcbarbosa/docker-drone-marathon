@@ -1,9 +1,20 @@
 #!/usr/local/bin/python
 
 import os
+import re
 import sys
 import json
 import requests
+
+
+def replace_secrets(d):
+    for k, v in d.iteritems():
+        if isinstance(v, dict):
+            replace_secrets(v)
+        elif isinstance(v, str):
+            if v[0:1] == "${" and v[-1] == "}":
+                v = re.sub('[\$\{\}]', '', v)
+
 
 if __name__ == "__main__":
     try:
@@ -18,5 +29,6 @@ if __name__ == "__main__":
         app = json.loads(os.getenv("PLUGIN_APP_CONFIG"))
 
     print json.dumps(app, indent=4)
+    replace_secrets(app)
     r = requests.put('%s/v2/apps/%s' % (server, app.get("id")), json=app)
     print r.text
